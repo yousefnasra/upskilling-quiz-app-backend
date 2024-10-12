@@ -1,13 +1,15 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterInstructorDto } from './dto/instructor/register.dto';
-import { Instructor } from '@prisma/client';
+import { Instructor, Student } from '@prisma/client';
 import { LoginInstructorDto } from './dto/instructor/login.dto';
+import { RegisterStudentDto } from './dto/student/register.dto';
+import { LoginStudentDto } from './dto/student/login.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
+  // & INSTRUCTOR
   // * /auth/instructor/register
   /**
    * @description Register a new instructor
@@ -35,5 +37,32 @@ export class AuthController {
     access_token: string;
   }> {
     return this.authService.loginInstructor(dto);
+  }
+  // & STUDENT
+  // * /auth/student/register
+  /**
+   * @description Register a new student
+   * @param {RegisterStudentDto} dto
+   * @returns {Promise<Student>}
+   */
+  @Post('student/register')
+  registerStudent(@Body() dto: RegisterStudentDto): Promise<Partial<Student>> {
+    return this.authService.registerStudent(dto);
+  }
+  // * /auth/student/login
+  /**
+   * @description Login an student
+   * @param {LoginStudentDto} dto
+   * @returns {Promise<{
+   * instructor: Partial<Student>;
+   * access_token: string;
+   * }>}
+   */
+  @Post('student/login')
+  loginStudent(@Body() dto: LoginStudentDto): Promise<{
+    student: Partial<Student>;
+    access_token: string;
+  }> {
+    return this.authService.loginStudent(dto);
   }
 }

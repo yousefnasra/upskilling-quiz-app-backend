@@ -7,16 +7,18 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RegisterInstructorDto } from './dto/instructor/register.dto';
 import * as bcrypt from 'bcryptjs';
-import { Instructor } from '@prisma/client';
+import { Instructor, Student } from '@prisma/client';
 import { LoginInstructorDto } from './dto/instructor/login.dto';
 import { JwtService } from '@nestjs/jwt';
+import { RegisterStudentDto } from './dto/student/register.dto';
+import { LoginStudentDto } from './dto/student/login.dto';
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly JwtService: JwtService,
   ) {}
-
+  // & INSTRUCTOR
   // * registerInstructor
   /**
    * @description Register a new instructor
@@ -90,6 +92,84 @@ export class AuthService {
         email: instructor.email,
         createdAt: instructor.createdAt,
         updatedAt: instructor.updatedAt,
+      },
+      access_token: token,
+    };
+  }
+  // & STUDENT
+    // * registerStudent
+  /**
+   * @description Register a new student
+   * @param {RegisterStudentDto} dto
+   * @returns {Promise<Student>}
+   */
+  async registerStudent(
+    dto: RegisterStudentDto,
+  ): Promise<Partial<Student>> {
+    // check if Student already exist
+    const existingStudent = await this.prisma.student.findUnique({
+      where: { email: dto.email },
+    });
+    if (existingStudent) {
+      throw new ConflictException('Student alraedy exists!');
+    }
+    // hash Student password
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    // create new Student
+    const createdStudent = await this.prisma.student.create({
+      data: { ...dto, password: hashedPassword },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    // send response
+    return createdStudent;
+  }
+  // * loginStudent
+  /**
+   * @description Login an Student
+   * @param {LoginStudentrDto} dto
+   * @returns {Promise<{
+   * student: Partial<Student>;
+   * access_token: string;
+   * }>}
+   */
+  async loginStudent(dto: LoginStudentDto): Promise<{
+    student: Partial<Student>;
+    access_token: string;
+  }> {
+    // check if Student not exist
+    const student = await this.prisma.student.findUnique({
+      where: { email: dto.email },
+    });
+    if (!student) throw new NotFoundException('Student not found!');
+
+    // check if password correct
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      student.password,
+    );
+    if (!isPasswordValid)
+      throw new UnauthorizedException('Invalid Email or Password!');
+    // create token
+    const payload = {
+      id: student.id,
+      name: student.name,
+      email: student.email,
+    };
+    const token = this.JwtService.sign(payload);
+    // send response
+    return {
+      student: {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        createdAt: student.createdAt,
+        updatedAt: student.updatedAt,
       },
       access_token: token,
     };
