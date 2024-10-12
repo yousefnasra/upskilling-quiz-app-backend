@@ -7,30 +7,45 @@ async function main() {
   // Delete all existing records
   await prisma.instructor.deleteMany();
   await prisma.student.deleteMany();
+  await prisma.course.deleteMany();
 
   // Create Instructors
-  for (let i = 0; i < 10; i++) {
-    await prisma.instructor.create({
+  const instructorsPromises = Array.from({ length: 10 }).map(() => {
+    return prisma.instructor.create({
       data: {
         name: faker.person.fullName(),
         email: faker.internet.email(),
         password: faker.internet.password(),
       },
     });
-  }
+  });
+  const instructors = await Promise.all(instructorsPromises);
 
   // Create Students
-  for (let i = 0; i < 10; i++) {
-    await prisma.student.create({
+  const studentsPromises = Array.from({ length: 10 }).map(() => {
+    return prisma.student.create({
       data: {
         name: faker.person.fullName(),
         email: faker.internet.email(),
         password: faker.internet.password(),
       },
     });
-  }
-  console.log('seeding completed successfully');
+  });
+  await Promise.all(studentsPromises);
 
+  // Create Courses
+  const coursesPromises = Array.from({ length: 10 }).map(() => {
+    return prisma.course.create({
+      data: {
+        title: faker.lorem.sentence(),
+        description: faker.lorem.paragraph(),
+        instructorId: instructors[Math.floor(Math.random() * instructors.length)].id,
+      },
+    });
+  });
+  await Promise.all(coursesPromises);
+
+  console.log('Seeding completed successfully');
 }
 
 main()

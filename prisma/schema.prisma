@@ -14,6 +14,7 @@ model Instructor {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  Course    Course[]
 }
 
 model Student {
@@ -23,4 +24,14 @@ model Student {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id           Int        @id @default(autoincrement())
+  title        String
+  description  String?
+  instructorId Int
+  instructor   Instructor @relation(fields: [instructorId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
